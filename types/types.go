@@ -1,6 +1,18 @@
 package types
 
-import "encoding/gob"
+import (
+	"bytes"
+	"encoding/gob"
+)
+
+var (
+	// Packet types
+	PktCreateLobby  = "create_lobby"
+	PktCreatedLobby = "created_lobby"
+	PktJoinLobby    = "join_lobby"
+	PktClientJoined = "client_joined"
+	PktJoinedLobby  = "joined_lobby"
+)
 
 type Packet struct {
 	Type string
@@ -13,10 +25,13 @@ type CreateLobbyPacketData struct {
 }
 
 type CreatedLobbyPacketData struct {
-	LobbyID string
+	LobbyID     string
+	PublicAddr  string
+	PrivateAddr string
 }
 
 type JoinLobbyPacketData struct {
+	PublicAddr  string
 	PrivateAddr string
 	LobbyID     string
 }
@@ -39,4 +54,22 @@ func RegisterTypes() {
 	gob.Register(JoinLobbyPacketData{})
 	gob.Register(ClientJoinedPacketData{})
 	gob.Register(JoinedLobbyPacketData{})
+}
+
+func DecodePacket(data []byte) (*Packet, error) {
+	var packet Packet
+	err := gob.NewDecoder(bytes.NewBuffer(data)).Decode(&packet)
+	if err != nil {
+		return nil, err
+	}
+	return &packet, nil
+}
+
+func EncodePacket(packet *Packet) ([]byte, error) {
+	var buf bytes.Buffer
+	err := gob.NewEncoder(&buf).Encode(packet)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
