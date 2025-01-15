@@ -3,6 +3,7 @@ package types
 import (
 	"bytes"
 	"encoding/gob"
+	"net"
 )
 
 var (
@@ -21,30 +22,30 @@ type Packet struct {
 
 type CreateLobbyPacketData struct {
 	LobbyID     string
-	PrivateAddr string
+	PrivateAddr net.UDPAddr
 }
 
 type CreatedLobbyPacketData struct {
 	LobbyID     string
-	PublicAddr  string
-	PrivateAddr string
+	PublicAddr  net.UDPAddr
+	PrivateAddr net.UDPAddr
 }
 
 type JoinLobbyPacketData struct {
-	PublicAddr  string
-	PrivateAddr string
+	PublicAddr  net.UDPAddr
+	PrivateAddr net.UDPAddr
 	LobbyID     string
 }
 
 type ClientJoinedPacketData struct {
-	ClientPrivateAddr string
-	ClientPublicAddr  string
+	ClientPrivateAddr net.UDPAddr
+	ClientPublicAddr  net.UDPAddr
 }
 
 type JoinedLobbyPacketData struct {
 	LobbyID         string
-	HostPrivateAddr string
-	HostPublicAddr  string
+	HostPrivateAddr net.UDPAddr
+	HostPublicAddr  net.UDPAddr
 }
 
 func RegisterTypes() {

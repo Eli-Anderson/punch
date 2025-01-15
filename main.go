@@ -49,16 +49,11 @@ func main() {
 		gob.NewDecoder(bytes.NewBuffer(p)).Decode(&packet)
 
 		switch packet.Type {
-		case "create_lobby":
+		case types.PktCreateLobby:
 			data := packet.Data.(types.CreateLobbyPacketData)
 			slog.Info("Creating lobby", "addr", addr.String())
-			privateAddr, err := net.ResolveUDPAddr("udp", data.PrivateAddr)
-			if err != nil {
-				slog.Info("Client sent invalid private address", "addr", addr.String())
-				continue
-			}
 			client := &Client{
-				PrivateAddr: privateAddr,
+				PrivateAddr: &data.PrivateAddr,
 				PublicAddr:  addr,
 			}
 			lobby := &Lobby{
@@ -68,22 +63,19 @@ func main() {
 			}
 			lobbies = append(lobbies, lobby)
 			packet := types.Packet{
-				Type: "created_lobby",
+				Type: types.PktCreatedLobby,
 				Data: types.CreatedLobbyPacketData{
-					LobbyID: lobby.ID,
+					LobbyID:     lobby.ID,
+					PublicAddr:  *addr,
+					PrivateAddr: data.PrivateAddr,
 				},
 			}
 			var buf bytes.Buffer
 			gob.NewEncoder(&buf).Encode(packet)
 			server.WriteToUDP(buf.Bytes(), addr)
-		case "join_lobby":
+		case types.PktJoinLobby:
 			data := packet.Data.(types.JoinLobbyPacketData)
 			slog.Info("Client joining lobby", "addr", addr.String(), "lobbyID", data.LobbyID)
-			privateAddr, err := net.ResolveUDPAddr("udp", data.PrivateAddr)
-			if err != nil {
-				slog.Info("Client sent invalid private address", "addr", addr.String())
-				continue
-			}
 			var lobby *Lobby
 			for _, m := range lobbies {
 				if m.ID == data.LobbyID {
@@ -96,10 +88,10 @@ func main() {
 				continue
 			}
 			packet := types.Packet{
-				Type: "client_joined",
+				Type: types.PktClientJoined,
 				Data: types.ClientJoinedPacketData{
-					ClientPrivateAddr: privateAddr.String(),
-					ClientPublicAddr:  addr.String(),
+					ClientPrivateAddr: data.PrivateAddr,
+					ClientPublicAddr:  *addr,
 				},
 			}
 			var buf bytes.Buffer
@@ -107,11 +99,11 @@ func main() {
 			server.WriteToUDP(buf.Bytes(), lobby.Host.PublicAddr)
 
 			packet = types.Packet{
-				Type: "joined_lobby",
+				Type: types.PktJoinedLobby,
 				Data: types.JoinedLobbyPacketData{
 					LobbyID:         lobby.ID,
-					HostPrivateAddr: lobby.Host.PrivateAddr.String(),
-					HostPublicAddr:  lobby.Host.PublicAddr.String(),
+					HostPrivateAddr: *lobby.Host.PrivateAddr,
+					HostPublicAddr:  *lobby.Host.PublicAddr,
 				},
 			}
 			buf.Reset()
